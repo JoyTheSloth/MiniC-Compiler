@@ -48,3 +48,9 @@ echo -e "\e[32m== Installation is complete. =="
 echo -e "== Usage is as follows. ======="
 echo -e "\033[1;33m - Usage(make '.uco' file):: ./minic <miniC file>\e[39m"
 echo -e "\033[1;33m - Usage(execute U-code interpreter):: ./ucodei <uco file>\e[39m"
+
+win_flex --version
+win_bison --version
+
+cd frontend
+python app.py

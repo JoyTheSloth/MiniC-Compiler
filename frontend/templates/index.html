@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiniC Compiler Web Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/nord.min.css"
+    />
+    <style>
+      :root {
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #ffffff;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --accent-primary: #4361ee;
+        --accent-secondary: #3a0ca3;
+        --success: #4cc9f0;
+        --error: #ef476f;
+        --border: #e9ecef;
+        --input-bg: #ffffff;
+        --shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+        --editor-bg: #282c34;
+      }
+
+      [data-theme="dark"] {
+        --bg-primary: #121212;
+        --bg-secondary: #1e1e1e;
+        --text-primary: #f8f9fa;
+        --text-secondary: #adb5bd;
+        --accent-primary: #4895ef;
+        --accent-secondary: #4cc9f0;
+        --success: #43aa8b;
+        --error: #f94144;
+        --border: #333333;
+        --input-bg: #2d2d2d;
+        --shadow: rgba(0, 0, 0, 0.3) 0px 8px 24px;
+        --editor-bg: #1e1e1e;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        transition: background-color 0.3s ease, color 0.3s ease,
+          border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+
+      .header {
+        background-color: var(--bg-secondary);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header h1 {
+        font-weight: 600;
+        font-size: 1.8rem;
+        background: linear-gradient(
+          90deg,
+          var(--accent-primary),
+          var(--accent-secondary)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .control-panel {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+        background-color: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .select-container {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        padding: 12px 15px;
+        font-family: "Poppins", sans-serif;
+        font-size: 16px;
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      }
+
+      .select-container::after {
+        content: "▼";
+        font-size: 12px;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        pointer-events: none;
+      }
+
+      .buttons-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button {
+        padding: 12px 24px;
+        font-family: "Poppins", sans-serif;
+        font-weight: 500;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .primary-btn {
+        background: linear-gradient(
+          90deg,
+          var(--accent-primary),
+          var(--accent-secondary)
+        );
+        color: white;
+      }
+
+      .theme-toggle {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        height: 42px;
+        width: 42px;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      @media (min-width: 768px) {
+        .grid-container {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .panel {
+        background-color: var(--bg-secondary);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .panel-header {
+        padding: 15px 20px;
+        background-color: rgba(0, 0, 0, 0.03);
+        border-bottom: 1px solid var(--border);
+        font-weight: 500;
+      }
+
+      .panel-content {
+        padding: 20px;
+      }
+
+      .input-panel {
+        margin-bottom: 20px;
+      }
+
+      .input-help {
+        margin-bottom: 15px;
+        padding: 12px;
+        background-color: rgba(67, 97, 238, 0.05);
+        border-left: 4px solid var(--accent-primary);
+        color: var(--text-secondary);
+        border-radius: 0 8px 8px 0;
+        font-size: 14px;
+      }
+
+      textarea {
+        width: 100%;
+        height: 120px;
+        padding: 12px;
+        font-family: "Poppins", sans-serif;
+        font-size: 15px;
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        resize: vertical;
+      }
+
+      .CodeMirror {
+        height: 500px;
+        font-size: 15px;
+        border-radius: 8px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .output-section {
+        padding: 15px;
+        min-height: 200px;
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        border-radius: 8px;
+        white-space: pre-line;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+      }
+
+      .error {
+        color: var(--error);
+        margin-top: 15px;
+        padding: 12px;
+        background-color: rgba(239, 71, 111, 0.05);
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      .debug-info {
+        margin-top: 20px;
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--text-secondary);
+        padding: 12px;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-radius: 8px;
+      }
+
+      /* Animation classes */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+      }
+
+      .pulse {
+        animation: pulse 0.5s ease-in-out;
+      }
+
+      .spin {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+      }
+
+      .loading-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: var(--text-secondary);
+      }
+
+      .success-indicator {
+        color: var(--success);
+        padding: 10px;
+        border-radius: 8px;
+        background-color: rgba(76, 201, 240, 0.1);
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <h1>MiniC Compiler</h1>
+      <div class="buttons-container">
+        <button
+          id="themeToggle"
+          class="theme-toggle"
+          aria-label="Toggle dark mode"
+        >
+          <svg
+            id="lightIcon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg
+            id="darkIcon"
+            style="display: none"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="control-panel">
+        <div class="select-container">
+          <select id="codeSnippets" onchange="loadSnippet()">
+            <option value="">Select a program...</option>
+            <option value="arithmetic">Basic Arithmetic</option>
+            <option value="factorial">Factorial</option>
+            <option value="fibonacci">Fibonacci</option>
+            <option value="bubble">Bubble Sort</option>
+            <option value="palindrome">Palindrome Check</option>
+          </select>
+        </div>
+        <div class="buttons-container">
+          <button id="compileBtn" onclick="compileAndRun()" class="primary-btn">
+            <span id="compileBtnText">Compile & Run</span>
+            <span id="compileBtnLoading" style="display: none" class="spin"
+              >⟳</span
+            >
+          </button>
+        </div>
+      </div>
+
+      <div class="input-panel panel">
+        <div class="panel-header">Input</div>
+        <div class="panel-content">
+          <div id="inputHelp" class="input-help">
+            Select a program to see input instructions
+          </div>
+          <textarea id="input" placeholder="Enter input here..."></textarea>
+        </div>
+      </div>
+
+      <div class="grid-container">
+        <div class="panel">
+          <div class="panel-header">Code Editor</div>
+          <div class="panel-content" style="padding: 0">
+            <textarea id="code">
+void main()
+{
+    int num1, num2;
+    int sum, diff, product;
+    float quotient;
+    
+    // Read two numbers
+    read(num1);
+    read(num2);
+    
+    // Calculate results
+    sum = num1 + num2;
+    diff = num1 - num2;
+    product = num1 * num2;
+    quotient = (float)num1 / num2;
+    
+    // Display results
+    write(sum);
+    write(diff);
+    write(product);
+    write(quotient);
+}
+
+int factorial(int n)
+{
+    if (n == 1) return 1;
+    else return n * factorial(n-1);
+}</textarea
+            >
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Output</div>
+          <div class="panel-content">
+            <div
+              id="successIndicator"
+              class="success-indicator"
+              style="display: none"
+            >
+              Compilation successful! ✓
+            </div>
+            <div id="outputContainer" class="output-section">
+              <div
+                class="placeholder-text"
+                style="color: var(--text-secondary)"
+              >
+                Output will appear here after compilation
+              </div>
+            </div>
+            <div id="error" class="error" style="display: none"></div>
+            <div id="debug" class="debug-info" style="display: none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script>
+      // Initialize theme based on user preference
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        document.getElementById("lightIcon").style.display = "none";
+        document.getElementById("darkIcon").style.display = "inline";
+      }
+
+      // Theme toggle functionality
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        const currentTheme =
+          document.documentElement.getAttribute("data-theme");
+        const newTheme = currentTheme === "light" ? "dark" : "light";
+
+        document.documentElement.setAttribute("data-theme", newTheme);
+
+        // Toggle icons
+        document.getElementById("lightIcon").style.display =
+          newTheme === "light" ? "inline" : "none";
+        document.getElementById("darkIcon").style.display =
+          newTheme === "dark" ? "inline" : "none";
+
+        // Update editor theme
+        editor.setOption("theme", newTheme === "dark" ? "monokai" : "nord");
+      });
+
+      // Initialize CodeMirror
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        mode: "text/x-csrc",
+        theme: prefersDark ? "monokai" : "nord",
+        lineNumbers: true,
+        indentUnit: 4,
+        lineWrapping: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        styleActiveLine: true,
+        tabSize: 4,
+        indentWithTabs: true,
+      });
+
+      const codeSnippets = {
+        arithmetic: `void main()
+{
+    int num1, num2;
+    int sum, diff, product;
+    float quotient;
+    
+    // Read two numbers
+    read(num1);
+    read(num2);
+    
+    // Calculate results
+    sum = num1 + num2;
+    diff = num1 - num2;
+    product = num1 * num2;
+    quotient = (float)num1 / num2;
+    
+    // Display results
+    write(sum);
+    write(diff);
+    write(product);
+    write(quotient);
+}`,
+        factorial: `void main()
+{
+    int n, f;
+    read(n);
+    write(n);
+    f = factorial(n);
+    write(f);
+}
+
+int factorial(int n)
+{
+    if (n == 1) return 1;
+    else return n * factorial(n-1);
+}`,
+        fibonacci: `void main()
+{
+    int n, i;
+    read(n);
+    
+    for(i = 1; i <= n; i++) {
+        write(fib(i));
+    }
+}
+
+int fib(int n)
+{
+    if (n <= 1) return n;
+    return fib(n-1) + fib(n-2);
+}`,
+        bubble: `void main()
+{
+    int list[100];
+    int element;
+    int total, i, top;
+    int temp;
+    i = 1;
+
+    read(element);
+    while (element != 0) {
+        list[i] = element;
+        ++i;
+        read(element);
+    }
+
+    total = i - 1;
+    top = total;
+    while (top > 1) {
+        i = 1;
+        while (i < top) {
+            if (list[i] > list[i+1]) {
+                temp = list[i];
+                list[i] = list[i+1];
+                list[i+1] = temp;
+            }
+            ++i;
+        }
+        top--;
+    }
+
+    i = 1;
+    while (i <= total) {
+        write(list[i]);
+        ++i;
+    }
+}`,
+        palindrome: `void main()
+{
+    int n, original, reversed, remainder;
+    read(n);
+    original = n;
+    reversed = 0;
+
+    while (n != 0) {
+        remainder = n % 10;
+        reversed = reversed * 10 + remainder;
+        n = n / 10;
+    }
+
+    if (original == reversed) {
+        write(1); // It's a palindrome
+    } else {
+        write(0); // It's not a palindrome
+    }
+}`,
+      };
+
+      function loadSnippet() {
+        const snippet = document.getElementById("codeSnippets").value;
+        if (snippet && codeSnippets[snippet]) {
+          editor.setValue(codeSnippets[snippet]);
+          editor.refresh();
+
+          // Add animation
+          document.querySelector(".CodeMirror").classList.add("pulse");
+          setTimeout(() => {
+            document.querySelector(".CodeMirror").classList.remove("pulse");
+          }, 500);
+        }
+        updateInputDescription();
+      }
+
+      // Input descriptions with emojis for modern look
+      const inputHelpText = {
+        arithmetic:
+          "<strong>📝 Required:</strong> Two numbers (one per line)<br><strong>🔢 Example:</strong> First number: 10, Second number: 5<br><strong>🧮 Operations:</strong> Addition, Subtraction, Multiplication, Division",
+        factorial:
+          "<strong>📝 Required:</strong> One positive integer<br><strong>🔢 Example:</strong> Enter 5 to calculate 5! (5×4×3×2×1)<br><strong>⚠️ Note:</strong> Input should be ≤ 12 to avoid overflow",
+        fibonacci:
+          "<strong>📝 Required:</strong> One positive integer N<br><strong>🔢 Example:</strong> Enter 10 to generate first 10 Fibonacci numbers<br><strong>📊 Output:</strong> F(1) through F(N)",
+        bubble:
+          "<strong>📝 Required:</strong> Multiple integers followed by 0<br><strong>🔢 Example:</strong> 5, 3, 8, 1, 0<br><strong>⚠️ Note:</strong> The 0 indicates end of input and is not included in the sort",
+        palindrome:
+          "<strong>📝 Required:</strong> One positive integer<br><strong>🔢 Example:</strong> Enter 121 or 12321<br><strong>📊 Output:</strong> 1 (is a palindrome) or 0 (not a palindrome)",
+      };
+
+      const inputDescriptions = {
+        arithmetic: "Enter two numbers (one per line):\nExample:\n10\n5",
+        factorial: "Enter a number to calculate factorial:\nExample:\n5",
+        fibonacci:
+          "Enter how many Fibonacci numbers to generate:\nExample:\n10",
+        bubble:
+          "Enter numbers to sort (enter 0 to stop):\nExample:\n5\n3\n8\n1\n0",
+        palindrome:
+          "Enter a number to check if it's a palindrome:\nExample:\n121",
+      };
+
+      function updateInputDescription() {
+        const snippet = document.getElementById("codeSnippets").value;
+        const inputBox = document.getElementById("input");
+        const inputHelpDiv = document.getElementById("inputHelp");
+
+        if (snippet && inputDescriptions[snippet]) {
+          inputBox.placeholder = inputDescriptions[snippet];
+          if (inputHelpText[snippet]) {
+            inputHelpDiv.innerHTML = inputHelpText[snippet];
+          } else {
+            inputHelpDiv.innerHTML =
+              "Enter input values as required by the program";
+          }
+
+          // Add animation
+          inputHelpDiv.classList.add("fade-in");
+          setTimeout(() => {
+            inputHelpDiv.classList.remove("fade-in");
+          }, 500);
+        } else {
+          inputBox.placeholder = "Enter input here...";
+          inputHelpDiv.innerHTML = "Select a program to see input instructions";
+        }
+      }
+
+      function showCompiling() {
+        const compileBtn = document.getElementById("compileBtn");
+        const compileBtnText = document.getElementById("compileBtnText");
+        const compileBtnLoading = document.getElementById("compileBtnLoading");
+
+        compileBtn.disabled = true;
+        compileBtnText.textContent = "Compiling...";
+        compileBtnLoading.style.display = "inline-block";
+
+        const outputContainer = document.getElementById("outputContainer");
+        outputContainer.innerHTML = `
+          <div class="loading-indicator fade-in">
+            <span class="spin">⟳</span> Processing your code...
+          </div>
+        `;
+
+        document.getElementById("successIndicator").style.display = "none";
+        document.getElementById("error").style.display = "none";
+        document.getElementById("error").innerHTML = "";
+        document.getElementById("debug").style.display = "none";
+      }
+
+      function hideCompiling(success) {
+        const compileBtn = document.getElementById("compileBtn");
+        const compileBtnText = document.getElementById("compileBtnText");
+        const compileBtnLoading = document.getElementById("compileBtnLoading");
+
+        compileBtn.disabled = false;
+        compileBtnText.textContent = "Compile & Run";
+        compileBtnLoading.style.display = "none";
+
+        if (success) {
+          document.getElementById("successIndicator").style.display = "block";
+          document.getElementById("successIndicator").classList.add("fade-in");
+          setTimeout(() => {
+            document
+              .getElementById("successIndicator")
+              .classList.remove("fade-in");
+          }, 500);
+        }
+      }
+
+      function compileAndRun() {
+        const code = editor.getValue();
+        const input = document.getElementById("input").value;
+        const outputDiv = document.getElementById("outputContainer");
+        const errorDiv = document.getElementById("error");
+        const debugDiv = document.getElementById("debug");
+
+        // Validate input based on the selected program
+        const snippet = document.getElementById("codeSnippets").value;
+        if (snippet && !validateInput(snippet, input)) {
+          return;
+        }
+
+        // Show compiling state
+        showCompiling();
+
+        // Simulate network delay for demo purposes
+        setTimeout(() => {
+          fetch("http://localhost:5001/compile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              code: code,
+              input: input,
+            }),
+            credentials: "same-origin",
+          })
+            .then((response) => {
+              if (response.ok) {
+                return response.json();
+              } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+            })
+            .then((data) => {
+              if (data.success) {
+                // Display output with animation
+                hideCompiling(true);
+                outputDiv.innerHTML = `<div class="fade-in">${
+                  data.output || "No output"
+                }</div>`;
+                if (data.error) {
+                  errorDiv.innerHTML = data.error;
+                  errorDiv.style.display = "block";
+                  errorDiv.classList.add("fade-in");
+                }
+              } else {
+                hideCompiling(false);
+                outputDiv.innerHTML = `<div class="fade-in">Compilation failed</div>`;
+                errorDiv.innerHTML = data.error || "Unknown error occurred";
+                errorDiv.style.display = "block";
+                errorDiv.classList.add("fade-in");
+
+                // Show debug information
+                debugDiv.innerHTML = `Debug Info:<br>Code: ${code.substring(
+                  0,
+                  100
+                )}...<br>Input: ${input}`;
+                debugDiv.style.display = "block";
+                debugDiv.classList.add("fade-in");
+              }
+            })
+            .catch((error) => {
+              hideCompiling(false);
+              outputDiv.innerHTML = `<div class="fade-in">Error occurred</div>`;
+              errorDiv.innerHTML = error.message;
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+
+              debugDiv.innerHTML = `Debug Info:<br>Code: ${code.substring(
+                0,
+                100
+              )}...<br>Input: ${input}<br>Error: ${error.message}`;
+              debugDiv.style.display = "block";
+              debugDiv.classList.add("fade-in");
+            });
+        }, 800); // Simulate network delay
+      }
+
+      // Input validation function
+      function validateInput(programType, input) {
+        const errorDiv = document.getElementById("error");
+        errorDiv.style.display = "none";
+
+        const lines = input
+          .trim()
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+
+        switch (programType) {
+          case "arithmetic":
+            if (lines.length < 2) {
+              errorDiv.innerHTML =
+                "Error: Arithmetic program requires at least two input values (one per line)";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            if (isNaN(parseFloat(lines[0])) || isNaN(parseFloat(lines[1]))) {
+              errorDiv.innerHTML =
+                "Error: Arithmetic program requires numeric input values";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            break;
+
+          case "factorial":
+            if (lines.length < 1) {
+              errorDiv.innerHTML =
+                "Error: Factorial program requires one input value";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            const factNum = parseInt(lines[0]);
+            if (isNaN(factNum) || factNum < 0) {
+              errorDiv.innerHTML =
+                "Error: Factorial program requires a positive integer";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            if (factNum > 12) {
+              errorDiv.innerHTML =
+                "Warning: Factorial of numbers larger than 12 may cause overflow";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+            }
+            break;
+
+          case "fibonacci":
+            if (lines.length < 1) {
+              errorDiv.innerHTML =
+                "Error: Fibonacci program requires one input value";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            const fibNum = parseInt(lines[0]);
+            if (isNaN(fibNum) || fibNum <= 0) {
+              errorDiv.innerHTML =
+                "Error: Fibonacci program requires a positive integer";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            if (fibNum > 40) {
+              errorDiv.innerHTML =
+                "Warning: Large Fibonacci sequences may take longer to compute";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+            }
+            break;
+
+          case "bubble":
+            if (lines.length < 2) {
+              errorDiv.innerHTML =
+                "Error: Bubble sort program requires multiple numbers followed by 0";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            const hasZero = lines.some((line) => parseInt(line.trim()) === 0);
+            if (!hasZero) {
+              errorDiv.innerHTML =
+                "Error: Bubble sort program requires a 0 to mark the end of input";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            for (const line of lines) {
+              if (isNaN(parseInt(line.trim()))) {
+                errorDiv.innerHTML =
+                  "Error: Bubble sort program requires integer values";
+                errorDiv.style.display = "block";
+                errorDiv.classList.add("fade-in");
+                return false;
+              }
+            }
+            break;
+
+          case "palindrome":
+            if (lines.length < 1) {
+              errorDiv.innerHTML =
+                "Error: Palindrome program requires one input value";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            const palNum = parseInt(lines[0]);
+            if (isNaN(palNum) || palNum < 0) {
+              errorDiv.innerHTML =
+                "Error: Palindrome program requires a positive integer";
+              errorDiv.style.display = "block";
+              errorDiv.classList.add("fade-in");
+              return false;
+            }
+            break;
+        }
+
+        return true;
+      }
+
+      // Initialize the page
+      document.addEventListener("DOMContentLoaded", function () {
+        // Add subtle animation to elements on page load
+        const elements = document.querySelectorAll(".panel, .control-panel");
+        elements.forEach((el, index) => {
+          el.style.opacity = "0";
+          el.style.transform = "translateY(20px)";
+          el.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+
+          setTimeout(() => {
+            el.style.opacity = "1";
+            el.style.transform = "translateY(0)";
+          }, 100 + index * 100);
+        });
+      });
+    </script>
+  </body>
+</html>
