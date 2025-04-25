@@ -1,63 +1,98 @@
-# MiniC-Compiler
 
- MiniC Compiler use flex & bison/yacc and C.
+# 🧠 Mini C Compiler
 
-## The component of Compiler 
+A lightweight compiler built in Python that parses a subset of C and generates pseudo-assembly code. Great for learning how compilers work! 💻🛠️
 
-1. [Ucode interpreter](./src/ucode)
-2. [Lexical Analyzer](./src/lex)
-   - reference: [a simple game based on finite automata](https://github.com/KeonHeeLee/simple-pocket-mon-game)
-3. [Parser](./src/parser)
-4. [Intermediate Language Generator](./src/icg)
+---
 
+## ✨ Features
 
-## Dependency
+- 🔍 Lexical Analysis (via `lexer.py`)
+- 🌲 Parsing to build an AST (via `parser.py`)
+- ⚙️ Pseudo-code Generation (via `codegen.py`)
+- ✅ Basic `int` declarations, arithmetic, and return statements supported
 
-- flex
-- bison/yacc
+---
 
-## Developing Environment
+## 📂 Project Structure
 
-- OS : Ubuntu 16.04 LTS
-- Language : C & C++
-- Compiler : gcc & g++
-
-## How to use
-
-**0. Installation**
-
-```bash
-$ git clone https://github.com/KeonHeeLee/MiniC-Compiler
-$ cd MiniC-Compiler
-$ sudo chmod +0777 setup.sh
-$ ./setup.sh
+```
+MiniC-Compiler/
+├── lexer.py        # Tokenizer
+├── parser.py       # AST builder
+├── codegen.py      # Assembly-like output generator
+├── main.py         # Driver script
+├── test.c          # Sample C file
+└── README.md       # This file
 ```
 
-**1. Generate Intermediate Language**
+---
 
+## 🚀 Getting Started
+
+### ✅ Requirements
+- Python 3.7+
+
+### ▶️ Run the Compiler
 ```bash
-$ ./minic <Mini-C file(.mc)>
+git clone https://github.com/yourusername/MiniC-Compiler.git
+cd MiniC-Compiler
+python main.py
 ```
 
-**2. Compile '.uco'(ICG) file**
+---
 
-```bash
-$ ./ucodei <ICG file(.uco)>
+## 🧪 Sample Input (`test.c`)
+
+```c
+int main() {
+    int a = 5;
+    int b = 10;
+    int c = a + b;
+    return c;
+}
 ```
 
-## Demo Snapshots
+---
 
-1. **[Palindrome](./test/pal.mc) (pal.mc)**
-<img src="./image/05.png">
+## 🖨️ Sample Output
 
-2. **[Bubble Sort](./test/bubble.mc) (bubble.mc)**
-<img src="./image/01.png">
+```
+=== Generated Assembly ===
+a = 5
+b = 10
+c = a + b
+RETURN c
+```
 
-3. **[Factorial](./test/factorial.mc) (factorial.mc)**
-<img src="./image/02.png">
+---
 
-4. **[Select number](./test/select.mc) (select.mc)**
-<img src="./image/03.png">
+## 📌 Roadmap
 
-5. **[Selection Sort](./test/selection_sort.mc) (selection_sort.mc)**
-<img src="./image/04.png">
+- [ ] 🌀 Support for control flow (`if`, `while`, etc.)
+- [ ] 🧠 Type checking and error handling
+- [ ] ⚡ Generate real x86 or WebAssembly output
+- [ ] 🌐 Web UI to visualize AST and output
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! Feel free to fork this repo and suggest improvements 🙌
+
+---
+
+## 👨‍💻 Author
+
+Built with ❤️ by [Joydeep Das](https://github.com/JoyTheSloth)
+
+---
+
+## 📜 License
+
+This project is open-source under the [MIT License](LICENSE).
+```
+
+---
+
+Let me know if you'd like your name and GitHub link added to the author section or want a version with screenshots, badges, or GitHub Actions CI integration.
